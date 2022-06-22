@@ -5,16 +5,14 @@ import json
 import re
 from collections import OrderedDict
 
-
 from ai_api_client_sdk import ai_api_v2_client
 from ai_api_client_sdk.ai_api_v2_client import AIAPIV2Client
 
-resource_dict =OrderedDict( {
+resource_dict = {
    'application': 
                      {'resource_name': 'application_name', 
                         'path': '/admin/applications'
                      },
-
    'resourceGroup': 
                      {'resource_name': 'resource_group_id', 
                         'path': '/admin/resourceGroups'
@@ -23,7 +21,7 @@ resource_dict =OrderedDict( {
                      {'resource_name': 'name', 
                         'path': '/admin/dockerRegistrySecrets'
                      }
-} )
+} 
 
 def create_client(aicore_service_key):
    # Read AI Core Service Key and create an AI Core API Client 
@@ -38,12 +36,14 @@ def create_client(aicore_service_key):
          client_id = service_key['clientid'],
          client_secret = service_key['clientsecret']
       )
+      return ai_api_client
    except FileNotFoundError:
-      print ("{args.aicore_service_key} Does not exists")
+      print ("{aicore_service_key} Does not exists")
+      return
    except json.JSONDecodeError:
       print ("aicore_service_key must be in JSON format ")
+      return
       
-   return ai_api_client
 
 def delete_resource(ai_api_client,resource, resource_name):
    path = resource_dict[resource]['path']+'/'+resource_name
@@ -69,7 +69,7 @@ def make_lists(response, resource, keep, delete):
       to_delete = [r[resource_dict[resource]['resource_name']]  for r in response if not re.search(keep,r[resource_dict[resource]['resource_name']] ) ]
       to_keep = [r[resource_dict[resource]['resource_name']]  for r in response if re.search(keep,r[resource_dict[resource]['resource_name']] )]
    else:
-      to_delete=[r[resource_dict[resource]['resource_name']]  for resource in response]
+      to_delete=[r[resource_dict[resource]['resource_name']]  for r in response]
 
    print ("{}  will be saved \n {}".format(len(to_keep), to_keep))
    print ("{}  will be deleted \n {}".format(len(to_delete), to_delete))
@@ -112,15 +112,12 @@ def main(argv):
                         default=['application','resourceGroup','dockerRegistry'], 
                         choices=['application','resourceGroup','dockerRegistry'],
                         help='Resources to be deleted')
-
    group = parser.add_mutually_exclusive_group()
    group.add_argument('--delete', metavar='delete', type=str, 
                        help='regex expression. Resources whose name contains this expression will be deleted')
    group.add_argument('--keep', metavar='keep', type=str, 
                        help='regex expression. Resources whose name contains this expression will not be deleted')
-   #parser.add_argument('--resource', metavar='resource', type=str, 
-   #                    help='Resources to be deleted')
-
+ 
    args = parser.parse_args()
    
    # Create AI API Client
